@@ -60,7 +60,7 @@ repos:
           - json
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 39.44.0
+    rev: 39.57.4
     hooks:
       - id: renovate-config-validator
         files: renovate\.json
