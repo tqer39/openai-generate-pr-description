@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>tqer39/renovate-config"
+  ],
+  "ignorePaths": [
+    ".python-version", // pre-commit が Python 3.13.0 に対応していないため
+  ],
+}
