@@ -8,7 +8,7 @@ from openai import OpenAI
 import os
 import subprocess
 
-# OpenAI API キーを設定
+# Set OpenAI API key
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("API key is not set.")
@@ -19,7 +19,7 @@ client = OpenAI(
 )
 
 
-# プロンプトの準備
+# Prepare the prompt
 def create_prompt(commit_logs: str, custom_prompt: str = None) -> str:
     default_prompt = f"""
     ## Instructions
@@ -69,14 +69,14 @@ def create_prompt(commit_logs: str, custom_prompt: str = None) -> str:
     return custom_prompt or default_prompt
 
 
-# OpenAI API でのリクエスト
+# Request to OpenAI API
 def generate_pr_description(commit_logs: str) -> str:
     prompt = create_prompt(commit_logs)
 
     response = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL"),
         messages=[
-            {"role": "system", "content": "あなたは優秀なソフトウェアエンジニアです。"},
+            {"role": "system", "content": "You are a highly skilled software engineer."},
             {"role": "user", "content": prompt},
         ],
         max_completion_tokens=1000,
@@ -86,16 +86,16 @@ def generate_pr_description(commit_logs: str) -> str:
     return str(response.choices[0].message.content).strip()
 
 
-# Git コミットログとファイルの差分の取得
+# Retrieve Git commit logs and file diffs
 def get_commit_logs_and_diffs() -> str:
-    # リモートの変更を取得
+    # Fetch remote changes
     subprocess.run(["git", "fetch", "origin"], check=True)
 
     result = subprocess.run(
         ["git", "log", "--pretty=format:%H %s", "origin/main..HEAD", "-n", str(os.getenv("COMMIT_LOG_HISTORY_LIMIT"))],
         capture_output=True,
         text=True,
-    )  # コミットログの数を制限
+    )  # Limit the number of commit logs
     commit_logs = result.stdout.strip().split("\n")
 
     if not commit_logs or commit_logs == [""]:
@@ -115,7 +115,7 @@ def get_commit_logs_and_diffs() -> str:
     return "\n\n".join(logs_and_diffs)
 
 
-# メインロジック
+# Main logic
 if __name__ == "__main__":
     commit_logs_and_diffs = get_commit_logs_and_diffs()
 
