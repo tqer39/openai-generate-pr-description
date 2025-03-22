@@ -24,6 +24,10 @@ inputs:
     description: 'OpenAI Model'
     required: true
     default: 'gpt-3.5-turbo'
+  locale:
+    description: "Locale for the prompt (e.g., en, ja)"
+    required: false
+    default: "en"
 
 runs:
   using: 'composite'
@@ -53,7 +57,7 @@ runs:
         OPENAI_API_KEY: ${{ inputs.openai-api-key }}
         OPENAI_MODEL: ${{ inputs.openai-model }}
       run: |
-        uv run ${{ github.action_path }}/scripts/generate_pr_description.py > pr_output.txt
+        uv run ${{ github.action_path }}/scripts/generate_pr_description.py --locale "${{ inputs.locale }}" > pr_output.txt
         cat pr_output.txt
       shell: bash
 

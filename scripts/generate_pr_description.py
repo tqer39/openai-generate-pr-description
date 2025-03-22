@@ -20,7 +20,7 @@ client = OpenAI(
 
 
 # Prepare the prompt
-def create_prompt(commit_logs: str, custom_prompt: str = None) -> str:
+def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en") -> str:
     default_prompt = f"""
     ## Instructions
 
@@ -30,6 +30,7 @@ def create_prompt(commit_logs: str, custom_prompt: str = None) -> str:
     - Enclose file names in backticks.
     - Refer to the following:
         - Use GitHub's Markdown syntax (https://github.com/orgs/community/discussions/16925) for NOTE, TIPS, IMPORTANT, WARNING, CAUTION as needed.
+    - Respond in the language specified by the locale: {locale}.
 
     Example:
     ```
