@@ -8,7 +8,7 @@ from openai import OpenAI
 import os
 import subprocess
 
-# OpenAI API キーを設定
+# Set OpenAI API key
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("API key is not set.")
@@ -19,63 +19,65 @@ client = OpenAI(
 )
 
 
-# プロンプトの準備
-def create_prompt(commit_logs: str) -> str:
-    return f"""
-    ## 指示内容
+# Prepare the prompt
+def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en") -> str:
+    default_prompt = f"""
+    ## Instructions
 
-    - 以下のコミットログとファイルの差分を読んで、理解し易いプルリクエストのタイトルと詳細な説明を作成してください。
+    - Read the following commit logs and file diffs, and create an easy-to-understand pull request title and detailed description.
     -
-    - 2行目以降は Markdown 形式で記述してください。
-    - ファイル名はバッククオートで囲んでください。
-    -  を参考にしてください。
-        - 必要に応じて GitHub の Markdown 記法（https://github.com/orgs/community/discussions/16925）を参考に NOTE, TIPS, IMPORTANT, WARNING, CAUTION を使用してください。
+    - From the second line onward, write in Markdown format.
+    - Enclose file names in backticks.
+    - Refer to the following:
+        - Use GitHub's Markdown syntax (https://github.com/orgs/community/discussions/16925) for NOTE, TIPS, IMPORTANT, WARNING, CAUTION as needed.
+    - Respond in the language specified by the locale: {locale}.
 
-    例:
+    Example:
     ```
     > [!WARNING]
     >
-    > - 💣 breaking change が含まれています。注意してください。
+    > - 💣 This includes a breaking change. Please be cautious.
     ```
 
-    - プルリクエストのタイトル
-        1. 1行目に出力してください。Markdown にしないでください。
-        2. タイトルの冒頭には総合的に適した emoji をつけてください。
-    - プルリクエストの説明
-        1. 2行目以降がプルリクエストの説明です。
-        2. コミットログとファイルを読んで、変更点の概要と技術的な詳細や注意点を記述してください。
-            1. なければ項目ごと出力しない。
-            2. 嘘を書かない。
-        3. 処理内容の図解が必要であれば mermaid.js の記法を使用する。
+    - Pull Request Title
+        1. Output on the first line. Do not use Markdown.
+        2. Add an appropriate emoji at the beginning of the title.
+    - Pull Request Description
+        1. From the second line onward, provide the pull request description.
+        2. Read the commit logs and files, and describe the summary of changes, technical details, and any points of caution.
+            1. If there are none, do not output the section.
+            2. Do not fabricate information.
+        3. If a diagram of the process is needed, use mermaid.js syntax.
 
-    ## コミットログとファイルの差分
+    ## Commit Logs and File Diffs
 
     {commit_logs}
 
-    ## プルリクエストの説明
+    ## Pull Request Description
 
-    ## 📒 変更点の概要
+    ## 📒 Summary of Changes
 
-    1. 各項目の先頭に適切な emoji を付ける。
+    1. Add an appropriate emoji at the beginning of each item.
 
-    ## ⚒ 技術的な詳細
+    ## ⚒ Technical Details
 
-    1. 各項目の先頭に適切な emoji を付ける。
+    1. Add an appropriate emoji at the beginning of each item.
 
-    ## ⚠ 注意点
+    ## ⚠ Points of Caution
 
-    1. 各項目の先頭に適切な emoji を付ける。
+    1. Add an appropriate emoji at the beginning of each item.
     """
+    return custom_prompt or default_prompt
 
 
-# OpenAI API でのリクエスト
+# Request to OpenAI API
 def generate_pr_description(commit_logs: str) -> str:
     prompt = create_prompt(commit_logs)
 
     response = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL"),
         messages=[
-            {"role": "system", "content": "あなたは優秀なソフトウェアエンジニアです。"},
+            {"role": "system", "content": "You are a highly skilled software engineer."},
             {"role": "user", "content": prompt},
         ],
         max_completion_tokens=1000,
@@ -85,16 +87,16 @@ def generate_pr_description(commit_logs: str) -> str:
     return str(response.choices[0].message.content).strip()
 
 
-# Git コミットログとファイルの差分の取得
+# Retrieve Git commit logs and file diffs
 def get_commit_logs_and_diffs() -> str:
-    # リモートの変更を取得
+    # Fetch remote changes
     subprocess.run(["git", "fetch", "origin"], check=True)
 
     result = subprocess.run(
         ["git", "log", "--pretty=format:%H %s", "origin/main..HEAD", "-n", str(os.getenv("COMMIT_LOG_HISTORY_LIMIT"))],
         capture_output=True,
         text=True,
-    )  # コミットログの数を制限
+    )  # Limit the number of commit logs
     commit_logs = result.stdout.strip().split("\n")
 
     if not commit_logs or commit_logs == [""]:
@@ -114,7 +116,7 @@ def get_commit_logs_and_diffs() -> str:
     return "\n\n".join(logs_and_diffs)
 
 
-# メインロジック
+# Main logic
 if __name__ == "__main__":
     commit_logs_and_diffs = get_commit_logs_and_diffs()
 

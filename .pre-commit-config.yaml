@@ -1,7 +1,7 @@
 ---
 # see https://pre-commit.com
 default_language_version:
-  python: python3.13.0
+  python: python3.12.1
 
 exclude: |
   (?x)^(
@@ -74,7 +74,7 @@ repos:
         description: "Run 'ruff' for extremely fast Python linting"
         entry: ruff check --force-exclude
         language: python
-        language_version: 3.13.0
+        language_version: 3.12.1
         types_or: [python, pyi]
         # --fix: enable lint fixes
         args: [--fix]
@@ -87,7 +87,7 @@ repos:
         description: "Run 'ruff' for extremely fast Python formatting"
         entry: ruff format --force-exclude
         language: python
-        language_version: 3.13.0
+        language_version: 3.12.1
         types_or: [python, pyi]
         args: []
         require_serial: true
