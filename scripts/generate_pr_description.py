@@ -20,8 +20,8 @@ client = OpenAI(
 
 
 # プロンプトの準備
-def create_prompt(commit_logs: str) -> str:
-    return f"""
+def create_prompt(commit_logs: str, custom_prompt: str = None) -> str:
+    default_prompt = f"""
     ## 指示内容
 
     - 以下のコミットログとファイルの差分を読んで、理解し易いプルリクエストのタイトルと詳細な説明を作成してください。
@@ -66,6 +66,7 @@ def create_prompt(commit_logs: str) -> str:
 
     1. 各項目の先頭に適切な emoji を付ける。
     """
+    return custom_prompt or default_prompt
 
 
 # OpenAI API でのリクエスト
