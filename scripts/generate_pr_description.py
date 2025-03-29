@@ -31,6 +31,7 @@ def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en
     - Refer to the following:
         - Use GitHub's Markdown syntax (https://github.com/orgs/community/discussions/16925) for NOTE, TIPS, IMPORTANT, WARNING, CAUTION as needed.
     - Respond in the language specified by the locale: {locale}.
+    - Ensure that the response is entirely in the specified locale language.
 
     Example:
     ```
@@ -70,9 +71,9 @@ def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en
     return custom_prompt or default_prompt
 
 
-# Request to OpenAI API
-def generate_pr_description(commit_logs: str) -> str:
-    prompt = create_prompt(commit_logs)
+# Ensure the response is in Japanese if locale is set to 'ja'
+def generate_pr_description(commit_logs: str, locale: str = "en") -> str:
+    prompt = create_prompt(commit_logs, locale=locale)
 
     response = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL"),
@@ -121,7 +122,8 @@ if __name__ == "__main__":
     commit_logs_and_diffs = get_commit_logs_and_diffs()
 
     if commit_logs_and_diffs:
-        pr_description = generate_pr_description(commit_logs_and_diffs)
+        locale = os.getenv("LOCALE", "en")  # Default to English if LOCALE is not set
+        pr_description = generate_pr_description(commit_logs_and_diffs, locale=locale)
         print(pr_description)
     else:
         print("No new commits detected.")
