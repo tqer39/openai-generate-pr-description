@@ -31,10 +31,11 @@ jobs:
     if: contains(fromJSON('["renovate[bot]"]'), github.event.pull_request.user.login) == false
     steps:
       - uses: actions/checkout@v4
-      - uses: tqer39/openai-generate-pr-description@v1.0.4
+      - uses: tqer39/openai-generate-pr-description@v1.0.5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          locale: 'ja' # 日本語で生成する場合
 ```
 
 ## Inputs
@@ -62,6 +63,10 @@ jobs:
 > [!NOTE]
 >
 > - 📝 OpenAI API の仕様で、1回のリクエストで使用可能なトークン数に制限があるため、コミットログの履歴の数を制限することで、リクエストの失敗を防ぐことができます。
+
+### `locale`
+
+**オプション** 言語のロケール。デフォルトは `en` です。
 
 ## 貢献方法
 

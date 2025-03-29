@@ -31,10 +31,11 @@ jobs:
     if: contains(fromJSON('["renovate[bot]"]'), github.event.pull_request.user.login) == false
     steps:
       - uses: actions/checkout@v4
-      - uses: tqer39/openai-generate-pr-description@v1.0.4
+      - uses: tqer39/openai-generate-pr-description@v1.0.5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          locale: 'ja' # Specify 'ja' to generate in Japanese
 ```
 
 ## Inputs
@@ -62,6 +63,10 @@ jobs:
 > [!NOTE]
 >
 > - 📝 Due to the limit of the number of tokens that can be used in one request in the OpenAI API specification, limiting the number of commit log histories can prevent request failures.
+
+### `locale`
+
+**Optional** Language for the generated title and description. Default is `en` (English). You can specify `ja` for Japanese.
 
 ## Contribution
 
