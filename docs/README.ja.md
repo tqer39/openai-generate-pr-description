@@ -35,6 +35,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          locale: 'ja' # 日本語で生成する場合
 ```
 
 ## Inputs
