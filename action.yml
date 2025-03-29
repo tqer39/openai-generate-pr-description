@@ -24,6 +24,10 @@ inputs:
     description: 'OpenAI Model'
     required: true
     default: 'gpt-3.5-turbo'
+  locale:
+    description: 'Locale'
+    required: false
+    default: 'en'
 
 runs:
   using: 'composite'
@@ -52,6 +56,7 @@ runs:
         COMMIT_LOG_HISTORY_LIMIT: ${{ inputs.commit-log-history-limit }}
         OPENAI_API_KEY: ${{ inputs.openai-api-key }}
         OPENAI_MODEL: ${{ inputs.openai-model }}
+        LOCALE: ${{ inputs.locale }}
       run: |
         uv run ${{ github.action_path }}/scripts/generate_pr_description.py > pr_output.txt
         cat pr_output.txt
