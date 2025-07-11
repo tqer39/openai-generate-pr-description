@@ -45,7 +45,7 @@ repos:
         additional_dependencies:
           - 'textlint@12.6.1'
           - 'textlint-filter-rule-allowlist@4.0.0'
-          - 'textlint-rule-ja-no-space-between-full-width@2.2.0'
+          - 'textlint-rule-ja-no-space-between-full-width@2.4.2'
           - 'textlint-filter-rule-comments@1.2.2'
           - 'textlint-rule-no-dropping-the-ra@3.0.0'
           - 'textlint-rule-terminology@3.0.5'
