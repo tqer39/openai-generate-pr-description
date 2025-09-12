@@ -33,7 +33,7 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
 
     - name: pip upgrade
       run: python -m pip install --upgrade pip
