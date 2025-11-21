@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write # git push するために必要
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Generate GitHub App Token
         id: app_token
