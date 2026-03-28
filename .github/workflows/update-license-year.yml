@@ -16,16 +16,16 @@ jobs:
     permissions:
       contents: write # git push するために必要
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Generate GitHub App Token
         id: app_token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3
         with:
           app-id: ${{ secrets.GHA_APP_ID }}
           private-key: ${{ secrets.GHA_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - uses: tqer39/update-license-year@v1.0.0
+      - uses: tqer39/update-license-year@ecb1743b65a4f7e6d2a7cbc7b96663a58db24304 # v1.0.0
         with:
           github-token: ${{ steps.app_token.outputs.token }}
