@@ -3,21 +3,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'バージョン番号 (例: 1.2.3)。空欄の場合は bump_type で自動計算'
-        required: false
-        default: ''
-      bump_type:
-        description: 'バンプタイプ (version が空の場合に使用)'
-        required: false
-        default: ''
-        type: choice
-        options:
-          - ''
-          - major
-          - minor
-          - patch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,73 +21,26 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          # pyproject.toml から現在のバージョンを取得
-          PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          echo "pyproject.toml のバージョン: ${PYPROJECT_VERSION}"
+          # pyproject.toml からバージョンを取得（信頼源）
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 
-          INPUT_VERSION="${{ github.event.inputs.version }}"
-          BUMP_TYPE="${{ github.event.inputs.bump_type }}"
-
-          if [ -n "${INPUT_VERSION}" ]; then
-            # バージョン直接指定の場合
-            if ! echo "${INPUT_VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "::error::無効なバージョン形式: ${INPUT_VERSION}。SemVer 形式 (例: 1.2.3) を指定してください。"
-              exit 1
-            fi
-            VERSION="${INPUT_VERSION}"
-          elif [ -n "${BUMP_TYPE}" ]; then
-            # バンプタイプで自動計算
-            IFS='.' read -r MAJOR MINOR PATCH <<< "${PYPROJECT_VERSION}"
-            case "${BUMP_TYPE}" in
-              major) VERSION="$((MAJOR + 1)).0.0" ;;
-              minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
-              patch) VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
-            esac
-          else
-            # どちらも指定なし: pyproject.toml のバージョンをそのまま使用
-            VERSION="${PYPROJECT_VERSION}"
+          # SemVer フォーマット検証
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::pyproject.toml のバージョンが無効です: ${VERSION}"
+            exit 1
           fi
 
           # 重複タグチェック
           if git tag -l "v${VERSION}" | grep -q .; then
-            echo "::error::タグ v${VERSION} は既に存在します。"
+            echo "::error::タグ v${VERSION} は既に存在します。pyproject.toml のバージョンを更新してください。"
             exit 1
           fi
 
-          # メジャーバージョンを抽出
           MAJOR_VERSION=$(echo "${VERSION}" | cut -d. -f1)
 
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "major=${MAJOR_VERSION}" >> "${GITHUB_OUTPUT}"
           echo "リリースバージョン: v${VERSION}"
-
-      - name: Update pyproject.toml
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-
-          if [ "${PYPROJECT_VERSION}" != "${VERSION}" ]; then
-            sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" pyproject.toml
-            echo "pyproject.toml を ${PYPROJECT_VERSION} → ${VERSION} に更新しました。"
-          else
-            echo "pyproject.toml は既に ${VERSION} です。更新不要。"
-          fi
-
-      - name: Commit and push
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-
-          # 変更がある場合のみコミット
-          if git diff --quiet pyproject.toml; then
-            echo "pyproject.toml に変更なし。コミットをスキップ。"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add pyproject.toml
-            git commit -m "chore: bump version to ${VERSION}"
-            git push origin main
-          fi
 
       - name: Create tag
         run: |
