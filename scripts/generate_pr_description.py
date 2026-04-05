@@ -1,26 +1,36 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "openai",
+#     "litellm",
 # ]
 # ///
-from openai import OpenAI
 import os
 import subprocess
+import sys
 
-# Set OpenAI API key
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("API key is not set.")
+import litellm
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+
+def resolve_config() -> tuple[str, str, str]:
+    """Resolve configuration with backward compatibility."""
+    api_key = os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("API key is not set. Provide 'api-key' input.")
+
+    if os.getenv("OPENAI_API_KEY") and not os.getenv("API_KEY"):
+        print("WARNING: 'openai-api-key' is deprecated. Use 'api-key' instead.", file=sys.stderr)
+
+    model = os.getenv("MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+    if os.getenv("OPENAI_MODEL") and not os.getenv("MODEL"):
+        print("WARNING: 'openai-model' is deprecated. Use 'model' instead.", file=sys.stderr)
+
+    provider = os.getenv("PROVIDER", "openai")
+
+    return api_key, provider, model
 
 
 # Prepare the prompt
-def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en") -> str:
+def create_prompt(commit_logs: str, custom_prompt: str | None = None, locale: str = "en") -> str:
     default_prompt = f"""
     ## Instructions
 
@@ -71,18 +81,26 @@ def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en
     return custom_prompt or default_prompt
 
 
-# Ensure the response is in Japanese if locale is set to 'ja'
 def generate_pr_description(commit_logs: str, locale: str = "en") -> str:
     prompt = create_prompt(commit_logs, locale=locale)
+    api_key, provider, model = resolve_config()
 
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL"),
+    # LiteLLM uses provider/model format
+    model_string = f"{provider}/{model}" if "/" not in model else model
+
+    max_tokens = int(os.getenv("MAX_TOKENS", "1000"))
+    temperature = float(os.getenv("TEMPERATURE", "0.1"))
+
+    response = litellm.completion(
+        model=model_string,
         messages=[
             {"role": "system", "content": "You are a highly skilled software engineer."},
             {"role": "user", "content": prompt},
         ],
-        max_completion_tokens=1000,
-        temperature=0.1,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        api_key=api_key,
+        api_base=os.getenv("API_BASE_URL") or None,
     )
 
     return str(response.choices[0].message.content).strip()

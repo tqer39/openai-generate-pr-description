@@ -1,6 +1,6 @@
 ---
-name: 'OpenAI: Generate Pull Request Title and Description'
-description: 'Generate Pull Request Title and Description using OpenAI API'
+name: 'AI: Generate Pull Request Title and Description'
+description: 'Generate Pull Request Title and Description using AI (OpenAI, Anthropic, Google Gemini, etc.)'
 author: Takeru O'oyama @tqer39
 branding:
   color: 'green'
@@ -9,25 +9,51 @@ branding:
 inputs:
   commit-log-history-limit:
     description: 'Commit log history limit'
-    required: true
+    required: false
     default: '70'
   github-token:
     description: 'GitHub token'
     required: true
     default: ""
-  openai-api-key:
-    description: 'OpenAI API key'
+  provider:
+    description: 'AI provider (openai, anthropic, gemini, etc.)'
+    required: false
+    default: 'openai'
+  model:
+    description: 'Model name (e.g., gpt-4o-mini, claude-sonnet-4-20250514, gemini-2.0-flash)'
+    required: false
+    default: 'gpt-4o-mini'
+  api-key:
+    description: 'API key for the selected provider'
     required: true
     default: ""
-  # see https://platform.openai.com/docs/models#continuous-model-upgrades
-  openai-model:
-    description: 'OpenAI Model'
-    required: true
-    default: 'gpt-3.5-turbo'
+  api-base-url:
+    description: 'Custom API base URL (optional, for self-hosted or proxy endpoints)'
+    required: false
+    default: ''
+  max-tokens:
+    description: 'Maximum tokens for the response'
+    required: false
+    default: '1000'
+  temperature:
+    description: 'Temperature for generation (0.0-2.0)'
+    required: false
+    default: '0.1'
   locale:
-    description: 'Locale'
+    description: 'Locale for output language (en, ja, etc.)'
     required: false
     default: 'en'
+  # Deprecated inputs (backward compatibility)
+  openai-api-key:
+    description: '[DEPRECATED] Use api-key instead'
+    required: false
+    default: ''
+    deprecationMessage: 'Use api-key instead'
+  openai-model:
+    description: '[DEPRECATED] Use model instead'
+    required: false
+    default: ''
+    deprecationMessage: 'Use model instead'
 
 runs:
   using: 'composite'
@@ -53,10 +79,17 @@ runs:
 
     - name: Generate PR Title and Description
       env:
+        PROVIDER: ${{ inputs.provider }}
+        MODEL: ${{ inputs.model }}
+        API_KEY: ${{ inputs.api-key }}
+        API_BASE_URL: ${{ inputs.api-base-url }}
+        MAX_TOKENS: ${{ inputs.max-tokens }}
+        TEMPERATURE: ${{ inputs.temperature }}
         COMMIT_LOG_HISTORY_LIMIT: ${{ inputs.commit-log-history-limit }}
+        LOCALE: ${{ inputs.locale }}
+        # Legacy fallback (read by Python script)
         OPENAI_API_KEY: ${{ inputs.openai-api-key }}
         OPENAI_MODEL: ${{ inputs.openai-model }}
-        LOCALE: ${{ inputs.locale }}
       run: |
         uv run ${{ github.action_path }}/scripts/generate_pr_description.py > pr_output.txt
         cat pr_output.txt

@@ -1,11 +1,11 @@
 [project]
-name = "generate-pr-description-action"
-version = "0.0.5"
-description = "Add your description here"
+name = "ai-generate-pr-description"
+version = "2.0.0"
+description = "Generate PR title and description using AI (multi-provider)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-  "openai==1.109.1",
+  "litellm>=1.50.0",
 ]
 
 [build-system]
@@ -14,7 +14,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 dev-dependencies = [
-    "openai==1.109.1",
+    "litellm>=1.50.0",
 ]
 
 [tool.mypy]
