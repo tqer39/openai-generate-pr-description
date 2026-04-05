@@ -63,7 +63,7 @@ repos:
     rev: 43.104.3
     hooks:
       - id: renovate-config-validator
-        files: renovate\.json
+        files: renovate\.json5
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.9
