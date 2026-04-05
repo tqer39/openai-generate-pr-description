@@ -1,0 +1,62 @@
+---
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0 # 全タグを取得するために必要
+
+      - name: Determine version
+        id: version
+        run: |
+          # pyproject.toml からバージョンを取得（信頼源）
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+          # SemVer フォーマット検証
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::pyproject.toml のバージョンが無効です: ${VERSION}"
+            exit 1
+          fi
+
+          # 重複タグチェック
+          if git tag -l "v${VERSION}" | grep -q .; then
+            echo "::error::タグ v${VERSION} は既に存在します。pyproject.toml のバージョンを更新してください。"
+            exit 1
+          fi
+
+          MAJOR_VERSION=$(echo "${VERSION}" | cut -d. -f1)
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "major=${MAJOR_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "リリースバージョン: v${VERSION}"
+
+      - name: Create tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "v${VERSION}" --generate-notes --title "v${VERSION}"
+
+      - name: Update major version tag
+        run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          git tag -f "v${MAJOR}"
+          git push -f origin "v${MAJOR}"

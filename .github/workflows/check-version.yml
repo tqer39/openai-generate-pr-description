@@ -1,0 +1,53 @@
+---
+name: Check Version Bump
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # renovate や bot による PR はスキップ
+    if: contains(fromJSON('["renovate[bot]", "tqer39-apps[bot]"]'), github.event.pull_request.user.login) == false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0 # 全タグを取得するために必要
+
+      - name: Check version is bumped
+        run: |
+          # 最新の安定版タグを取得（プレリリースを除外）
+          LATEST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v '-' | head -1)
+          LATEST_TAG=${LATEST_TAG:-v0.0.0}
+          TAG_VERSION=${LATEST_TAG#v}
+
+          # pyproject.toml から現在のバージョンを取得
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+          echo "最新タグ: ${LATEST_TAG} (${TAG_VERSION})"
+          echo "pyproject.toml: ${CURRENT_VERSION}"
+
+          # バージョンを数値比較
+          IFS='.' read -r TAG_MAJOR TAG_MINOR TAG_PATCH <<< "${TAG_VERSION}"
+          IFS='.' read -r CUR_MAJOR CUR_MINOR CUR_PATCH <<< "${CURRENT_VERSION}"
+
+          TAG_NUM=$((TAG_MAJOR * 1000000 + TAG_MINOR * 1000 + TAG_PATCH))
+          CUR_NUM=$((CUR_MAJOR * 1000000 + CUR_MINOR * 1000 + CUR_PATCH))
+
+          if [ "${CUR_NUM}" -le "${TAG_NUM}" ]; then
+            echo "::error::pyproject.toml のバージョン (${CURRENT_VERSION}) が最新タグ (${LATEST_TAG}) より新しくありません。バージョンを更新してください。"
+            exit 1
+          fi
+
+          echo "OK: バージョン ${CURRENT_VERSION} は最新タグ ${LATEST_TAG} より新しいです。"

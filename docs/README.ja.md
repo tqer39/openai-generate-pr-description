@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <i>このワークフローでは OpenAI による文章生成モデルを使って、プルリクエストのタイトルと本文を生成します。</i>
+  <i>OpenAI を使ってプルリクエストのタイトルと本文を自動生成する GitHub Action です。</i>
 </p>
 
 ## 使い方
@@ -28,10 +28,13 @@ jobs:
     timeout-minutes: 10
     permissions:
       pull-requests: write
+      contents: read
     if: contains(fromJSON('["renovate[bot]"]'), github.event.pull_request.user.login) == false
     steps:
-      - uses: actions/checkout@v4
-      - uses: tqer39/openai-generate-pr-description@v1.0.5
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: tqer39/generate-pr-description@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -52,21 +55,22 @@ jobs:
 
 **オプション** OpenAI モデル。デフォルトは `gpt-3.5-turbo` です。
 
-> [!NOTE]
->
-> - 📝 OpenAI API の仕様で、デフォルトのモデルは `gpt-3.5-turbo` で無料で使用できます。その他のモデルを使用する場合は、OpenAI API の料金が発生する可能性があります。
-
 ### `commit-log-history-limit`
 
 **オプション** コミットログの履歴の制限。デフォルトは `70` です。
 
-> [!NOTE]
->
-> - 📝 OpenAI API の仕様で、1回のリクエストで使用可能なトークン数に制限があるため、コミットログの履歴の数を制限することで、リクエストの失敗を防ぐことができます。
-
 ### `locale`
 
 **オプション** 言語のロケール。デフォルトは `en` です。
+
+## バージョニング
+
+このプロジェクトは [Semantic Versioning](https://semver.org/) に従います。以下の形式で参照できます:
+
+- **`@v1`** — メジャーバージョン 1 の最新安定版（推奨）
+- **`@v1.2.3`** — 特定バージョン
+
+リリースは手動の `Release` ワークフロー（`workflow_dispatch`）で作成されます。
 
 ## 貢献方法
 
@@ -74,4 +78,4 @@ jobs:
 
 ## ライセンス
 
-このアクションは MIT ライセンスのもとで公開されています。詳細については [LICENSE](LICENSE) を参照してください。
+このアクションは MIT ライセンスのもとで公開されています。詳細については [LICENSE](../LICENSE) を参照してください。
