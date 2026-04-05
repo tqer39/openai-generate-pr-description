@@ -7,6 +7,7 @@ allowed-tools: [Bash, Read, Glob, Grep]
 # Auto Commit
 
 変更ファイルを自動でステージングし、適切なコミットメッセージを生成してコミットする。
+
 ## 手順
 
 ### 1. 変更状態の確認
