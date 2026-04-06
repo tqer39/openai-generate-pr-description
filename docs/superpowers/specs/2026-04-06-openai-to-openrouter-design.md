@@ -1,3 +1,4 @@
+<!-- cSpell:ignore getenv Referer -->
 # OpenAI → OpenRouter 移行設計書
 
 ## Context
@@ -26,21 +27,23 @@
 #### 2. `action.yml`
 
 **メタデータ更新:**
+
 - `name`: OpenAI の記述を削除、OpenRouter を記載
 - `description`: OpenRouter API を使用する旨に変更
 
 **input の刷新（ブレイキングチェンジ）:**
 
-| 旧 input | 新 input | デフォルト |
-|----------|----------|----------|
-| `openai-api-key` | `api-key` | （必須） |
-| `openai-model` | `model` | `openai/gpt-4o-mini` |
-| — | `max-tokens` | `1000` |
-| — | `temperature` | `0.1` |
+| 旧 input         | 新 input      | デフォルト          |
+| ----------------- | ------------- | ------------------- |
+| `openai-api-key`  | `api-key`     | （必須）            |
+| `openai-model`    | `model`       | `openai/gpt-4o-mini` |
+| —                 | `max-tokens`  | `1000`              |
+| —                 | `temperature` | `0.1`               |
 
 旧 input（`openai-api-key`, `openai-model`）は完全に削除。
 
 **環境変数マッピング:**
+
 ```yaml
 env:
   API_KEY: ${{ inputs.api-key }}
@@ -54,6 +57,7 @@ env:
 #### 3. `scripts/generate_pr_description.py`
 
 **クライアント初期化:**
+
 ```python
 default_headers = {
     "HTTP-Referer": f"https://github.com/{os.getenv('GITHUB_REPOSITORY', 'tqer39/generate-pr-description')}",
@@ -68,6 +72,7 @@ client = OpenAI(
 ```
 
 **API コール:**
+
 ```python
 response = client.chat.completions.create(
     model=os.getenv("MODEL", "openai/gpt-4o-mini"),
@@ -79,6 +84,7 @@ response = client.chat.completions.create(
 ```
 
 **OpenRouter 固有対応:**
+
 - `HTTP-Referer` / `X-Title` ヘッダー: レート制限緩和とダッシュボード識別用
 - `extra_body={"route": "fallback"}`: モデル利用不可時の自動フォールバック
 
