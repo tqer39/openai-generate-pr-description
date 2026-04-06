@@ -1,6 +1,6 @@
 ---
-name: 'OpenAI: Generate Pull Request Title and Description'
-description: 'Generate Pull Request Title and Description using OpenAI API'
+name: 'Generate Pull Request Title and Description'
+description: 'Generate Pull Request Title and Description using OpenRouter API'
 author: Takeru O'oyama @tqer39
 branding:
   color: 'green'
@@ -9,23 +9,30 @@ branding:
 inputs:
   commit-log-history-limit:
     description: 'Commit log history limit'
-    required: true
+    required: false
     default: '70'
   github-token:
     description: 'GitHub token'
     required: true
     default: ""
-  openai-api-key:
-    description: 'OpenAI API key'
+  api-key:
+    description: 'OpenRouter API key'
     required: true
     default: ""
-  # see https://platform.openai.com/docs/models#continuous-model-upgrades
-  openai-model:
-    description: 'OpenAI Model'
-    required: true
-    default: 'gpt-3.5-turbo'
+  model:
+    description: 'Model identifier (OpenRouter format, e.g., openai/gpt-4o-mini, anthropic/claude-3.5-haiku)'
+    required: false
+    default: 'openai/gpt-4o-mini'
+  max-tokens:
+    description: 'Maximum completion tokens'
+    required: false
+    default: '1000'
+  temperature:
+    description: 'Sampling temperature (0.0-2.0)'
+    required: false
+    default: '0.1'
   locale:
-    description: 'Locale'
+    description: 'Locale for output language (en, ja, etc.)'
     required: false
     default: 'en'
 
@@ -53,9 +60,11 @@ runs:
 
     - name: Generate PR Title and Description
       env:
+        API_KEY: ${{ inputs.api-key }}
+        MODEL: ${{ inputs.model }}
+        MAX_TOKENS: ${{ inputs.max-tokens }}
+        TEMPERATURE: ${{ inputs.temperature }}
         COMMIT_LOG_HISTORY_LIMIT: ${{ inputs.commit-log-history-limit }}
-        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
-        OPENAI_MODEL: ${{ inputs.openai-model }}
         LOCALE: ${{ inputs.locale }}
       run: |
         uv run ${{ github.action_path }}/scripts/generate_pr_description.py > pr_output.txt

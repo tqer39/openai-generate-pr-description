@@ -2,17 +2,17 @@
   <a href="">
     <img src="./header.jpg" alt="header" width="100%">
   </a>
-  <h1 align="center">OpenAI Generate PR Title and Description</h1>
+  <h1 align="center">Generate PR Title and Description</h1>
 </p>
 
 <p align="center">
-  <i>OpenAI を使ってプルリクエストのタイトルと本文を自動生成する GitHub Action です。</i>
+  <i>OpenRouter を使ってプルリクエストのタイトルと本文を自動生成する GitHub Action です。単一のAPIで複数のAIプロバイダー（OpenAI、Anthropic、Google等）を利用できます。</i>
 </p>
 
 ## 使い方
 
 ```yaml
-name: OpenAI Generate PR Title and Description
+name: Generate PR Title and Description
 
 on:
   pull_request:
@@ -34,10 +34,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: tqer39/generate-pr-description@v1
+      - uses: tqer39/generate-pr-description@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          model: 'openai/gpt-4o-mini' # 省略可
           locale: 'ja' # 日本語で生成する場合
 ```
 
@@ -47,13 +48,21 @@ jobs:
 
 **必須** GitHub トークン。`${{ secrets.GITHUB_TOKEN }}` を指定します。
 
-### `openai-api-key`
+### `api-key`
 
-**必須** OpenAI API キー。`${{ secrets.OPENAI_API_KEY }}` を指定します。
+**必須** OpenRouter API キー。`${{ secrets.OPENROUTER_API_KEY }}` を指定します。
 
-### `openai-model`
+### `model`
 
-**オプション** OpenAI モデル。デフォルトは `gpt-3.5-turbo` です。
+**オプション** OpenRouter 形式のモデル識別子。デフォルトは `openai/gpt-4o-mini` です。利用可能なモデルは [OpenRouter Models](https://openrouter.ai/models) を参照してください。
+
+### `max-tokens`
+
+**オプション** 最大生成トークン数。デフォルトは `1000` です。
+
+### `temperature`
+
+**オプション** サンプリング温度（0.0-2.0）。デフォルトは `0.1` です。
 
 ### `commit-log-history-limit`
 
@@ -67,8 +76,8 @@ jobs:
 
 このプロジェクトは [Semantic Versioning](https://semver.org/) に従います。以下の形式で参照できます:
 
-- **`@v1`** — メジャーバージョン 1 の最新安定版（推奨）
-- **`@v1.2.3`** — 特定バージョン
+- **`@v2`** — メジャーバージョン 2 の最新安定版（推奨）
+- **`@v2.0.0`** — 特定バージョン
 
 リリースは手動の `Release` ワークフロー（`workflow_dispatch`）で作成されます。
 

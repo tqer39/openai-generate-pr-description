@@ -8,19 +8,24 @@ from openai import OpenAI
 import os
 import subprocess
 
-# Set OpenAI API key
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("API_KEY")
 if not api_key:
     raise ValueError("API key is not set.")
 
+github_repo = os.getenv("GITHUB_REPOSITORY", "tqer39/generate-pr-description")
+default_headers = {
+    "HTTP-Referer": f"https://github.com/{github_repo}",
+    "X-Title": "generate-pr-description",
+}
+
 client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=api_key,
+    base_url="https://openrouter.ai/api/v1",
+    default_headers=default_headers,
 )
 
 
-# Prepare the prompt
-def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en") -> str:
+def create_prompt(commit_logs: str, custom_prompt: str | None = None, locale: str = "en") -> str:
     default_prompt = f"""
     ## Instructions
 
@@ -71,33 +76,31 @@ def create_prompt(commit_logs: str, custom_prompt: str = None, locale: str = "en
     return custom_prompt or default_prompt
 
 
-# Ensure the response is in Japanese if locale is set to 'ja'
 def generate_pr_description(commit_logs: str, locale: str = "en") -> str:
     prompt = create_prompt(commit_logs, locale=locale)
 
     response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL"),
+        model=os.getenv("MODEL", "openai/gpt-4o-mini"),
         messages=[
             {"role": "system", "content": "You are a highly skilled software engineer."},
             {"role": "user", "content": prompt},
         ],
-        max_completion_tokens=1000,
-        temperature=0.1,
+        max_completion_tokens=int(os.getenv("MAX_TOKENS", "1000")),
+        temperature=float(os.getenv("TEMPERATURE", "0.1")),
+        extra_body={"route": "fallback"},
     )
 
     return str(response.choices[0].message.content).strip()
 
 
-# Retrieve Git commit logs and file diffs
 def get_commit_logs_and_diffs() -> str:
-    # Fetch remote changes
     subprocess.run(["git", "fetch", "origin"], check=True)
 
     result = subprocess.run(
         ["git", "log", "--pretty=format:%H %s", "origin/main..HEAD", "-n", str(os.getenv("COMMIT_LOG_HISTORY_LIMIT"))],
         capture_output=True,
         text=True,
-    )  # Limit the number of commit logs
+    )
     commit_logs = result.stdout.strip().split("\n")
 
     if not commit_logs or commit_logs == [""]:
@@ -117,12 +120,11 @@ def get_commit_logs_and_diffs() -> str:
     return "\n\n".join(logs_and_diffs)
 
 
-# Main logic
 if __name__ == "__main__":
     commit_logs_and_diffs = get_commit_logs_and_diffs()
 
     if commit_logs_and_diffs:
-        locale = os.getenv("LOCALE", "en")  # Default to English if LOCALE is not set
+        locale = os.getenv("LOCALE", "en")
         pr_description = generate_pr_description(commit_logs_and_diffs, locale=locale)
         print(pr_description)
     else:
