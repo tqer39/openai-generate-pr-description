@@ -77,7 +77,7 @@ jobs:
 This project follows [Semantic Versioning](https://semver.org/). You can reference:
 
 - **`@v2`** — Latest stable release within major version 2 (recommended)
-- **`@v2.0.0`** — Specific version
+- **`@v2.0.1`** — Specific version
 
 Releases are created via the manual `Release` workflow (`workflow_dispatch`).
 
