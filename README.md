@@ -2,17 +2,17 @@
   <a href="">
     <img src="./docs/header.jpg" alt="header" width="100%">
   </a>
-  <h1 align="center">OpenAI Generate PR Title and Description</h1>
+  <h1 align="center">Generate PR Title and Description</h1>
 </p>
 
 <p align="center">
-  <i>This GitHub Action uses OpenAI to automatically generate pull request titles and descriptions.</i>
+  <i>This GitHub Action uses OpenRouter to automatically generate pull request titles and descriptions. Supports multiple AI providers (OpenAI, Anthropic, Google, etc.) through a single API.</i>
 </p>
 
 ## Usage
 
 ```yaml
-name: OpenAI Generate PR Title and Description
+name: Generate PR Title and Description
 
 on:
   pull_request:
@@ -34,10 +34,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: tqer39/generate-pr-description@v1
+      - uses: tqer39/generate-pr-description@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          model: 'openai/gpt-4o-mini' # optional
           locale: 'ja' # Specify 'ja' to generate in Japanese
 ```
 
@@ -47,13 +48,21 @@ jobs:
 
 **Required** GitHub token. Specify `${{ secrets.GITHUB_TOKEN }}`.
 
-### `openai-api-key`
+### `api-key`
 
-**Required** OpenAI API key. Specify `${{ secrets.OPENAI_API_KEY }}`.
+**Required** OpenRouter API key. Specify `${{ secrets.OPENROUTER_API_KEY }}`.
 
-### `openai-model`
+### `model`
 
-**Optional** OpenAI model to use. Default is `gpt-3.5-turbo`.
+**Optional** Model identifier in OpenRouter format. Default is `openai/gpt-4o-mini`. See [OpenRouter Models](https://openrouter.ai/models) for available models.
+
+### `max-tokens`
+
+**Optional** Maximum completion tokens. Default is `1000`.
+
+### `temperature`
+
+**Optional** Sampling temperature (0.0-2.0). Default is `0.1`.
 
 ### `commit-log-history-limit`
 
@@ -67,8 +76,8 @@ jobs:
 
 This project follows [Semantic Versioning](https://semver.org/). You can reference:
 
-- **`@v1`** — Latest stable release within major version 1 (recommended)
-- **`@v1.2.3`** — Specific version
+- **`@v2`** — Latest stable release within major version 2 (recommended)
+- **`@v2.0.0`** — Specific version
 
 Releases are created via the manual `Release` workflow (`workflow_dispatch`).
 
