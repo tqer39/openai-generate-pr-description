@@ -1,6 +1,6 @@
 [project]
 name = "generate-pr-description-action"
-version = "2.0.0"
+version = "2.0.1"
 description = "Generate PR title and description using OpenRouter API"
 readme = "README.md"
 requires-python = ">=3.13"
