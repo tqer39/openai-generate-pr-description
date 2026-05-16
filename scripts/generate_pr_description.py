@@ -27,53 +27,100 @@ client = OpenAI(
 
 def create_prompt(commit_logs: str, custom_prompt: str | None = None, locale: str = "en") -> str:
     default_prompt = f"""
-    ## Instructions
+    You generate a pull request title and description from commit logs and diffs.
 
-    - Read the following commit logs and file diffs, and create an easy-to-understand pull request title and detailed description.
-    -
-    - From the second line onward, write in Markdown format.
-    - Enclose file names in backticks.
-    - Refer to the following:
-        - Use GitHub's Markdown syntax (https://github.com/orgs/community/discussions/16925) for NOTE, TIPS, IMPORTANT, WARNING, CAUTION as needed.
-    - Respond in the language specified by the locale: {locale}.
-    - Ensure that the response is entirely in the specified locale language.
+    # Output format (STRICT)
 
-    Example:
-    ```
-    > [!WARNING]
-    >
-    > - 💣 This includes a breaking change. Please be cautious.
-    ```
+    Your entire response MUST follow this exact shape and nothing else:
 
-    - Pull Request Title
-        1. Output on the first line. Do not use Markdown.
-        2. Add an appropriate emoji at the beginning of the title.
-    - Pull Request Description
-        1. From the second line onward, provide the pull request description.
-        2. Read the commit logs and files, and describe the summary of changes, technical details, and any points of caution.
-            1. If there are none, do not output the section.
-            2. Do not fabricate information.
-        3. If a diagram of the process is needed, use mermaid.js syntax.
+    Line 1: The pull request title.
+      - Plain text only. No Markdown, no quotes, no labels, no prefix like "Title:".
+      - Start with one emoji that fits the change, followed by a single space.
+      - One line only. No trailing blank line before the body.
 
-    ## Commit Logs and File Diffs
+    Line 2 onward: The pull request description body in Markdown.
+      - Do NOT repeat or translate any label such as "Pull Request Title",
+        "Pull Request Description", "Title", "Body", or "Description".
+      - Do NOT output a top-level heading for the description itself.
+      - Use the section headings listed below as `##` headings (translated into the
+        response language). Omit any section that has nothing meaningful to say.
+      - Enclose file names in backticks.
+      - You MAY use GitHub Markdown alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`,
+        `> [!WARNING]`, `> [!CAUTION]`) when appropriate.
+      - You MAY use mermaid.js code blocks when a diagram clarifies the change.
+      - Do NOT fabricate information; rely only on the commit logs and diffs.
 
-    {commit_logs}
+    # Section headings to use in the body (translate into the response language)
 
-    ## Pull Request Description
+    - 📒 Summary of Changes — bullet list, one emoji at the start of each item.
+    - ⚒ Technical Details — bullet list, one emoji at the start of each item.
+    - ⚠ Points of Caution — bullet list, one emoji at the start of each item.
+
+    # Language
+
+    Write the entire response in the locale: {locale}.
+
+    # Example shape (do NOT copy the wording; only the structure)
+
+    🔧 Refactor authentication helpers
 
     ## 📒 Summary of Changes
 
-    1. Add an appropriate emoji at the beginning of each item.
+    - ♻️ Consolidate token validation into a single helper.
 
     ## ⚒ Technical Details
 
-    1. Add an appropriate emoji at the beginning of each item.
+    - 🔐 Replace ad-hoc JWT parsing with `jwt.decode` in `auth/token.py`.
 
-    ## ⚠ Points of Caution
+    # Commit logs and diffs
 
-    1. Add an appropriate emoji at the beginning of each item.
+    {commit_logs}
     """
     return custom_prompt or default_prompt
+
+
+_LABEL_NOISE_PATTERNS = (
+    # English labels
+    "pull request title",
+    "pull request description",
+    "title:",
+    "description:",
+    "body:",
+    # Japanese labels
+    "プルリクエストタイトル",
+    "プルリクエストの説明",
+    "プルリクエスト説明",
+    "タイトル:",
+    "タイトル：",
+    "説明:",
+    "説明：",
+)
+
+
+def _strip_label_lines(text: str) -> str:
+    """Remove leading lines that are just label echoes from the LLM.
+
+    The OpenRouter prompt previously contained literal section labels
+    ("Pull Request Title" / "## Pull Request Description") which gpt-4o-mini
+    occasionally reproduced (translated when locale=ja) as the first lines
+    of its response. The shell side splits the response with `head -n 1`,
+    so a leaked label becomes the PR title. This helper drops any such
+    leading label lines (and leading blanks) before the response is printed.
+
+    Only the leading run is stripped; identical strings appearing later in
+    the body are kept as-is to avoid false positives.
+    """
+    lines = text.splitlines()
+    while lines:
+        head = lines[0].strip().strip("#").strip().strip("*").strip().lower()
+        if head and any(head == pat or head.startswith(pat) for pat in _LABEL_NOISE_PATTERNS):
+            lines.pop(0)
+            continue
+        if not head:
+            lines.pop(0)
+            continue
+        break
+    return "\n".join(lines)
 
 
 def generate_pr_description(commit_logs: str, locale: str = "en") -> str:
@@ -90,7 +137,8 @@ def generate_pr_description(commit_logs: str, locale: str = "en") -> str:
         extra_body={"route": "fallback"},
     )
 
-    return str(response.choices[0].message.content).strip()
+    raw = str(response.choices[0].message.content).strip()
+    return _strip_label_lines(raw)
 
 
 def get_commit_logs_and_diffs() -> str:
