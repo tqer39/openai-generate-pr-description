@@ -15,6 +15,7 @@ build-backend = "setuptools.build_meta"
 [tool.uv]
 dev-dependencies = [
     "openai==2.32.0",
+    "pytest>=8.0",
 ]
 
 [tool.mypy]
