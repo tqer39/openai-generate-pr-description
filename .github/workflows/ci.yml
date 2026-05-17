@@ -1,0 +1,116 @@
+---
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prek:
+    name: prek
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: prek
+        uses: j178/prek-action@cbc2f23eb5539cf20d82d1aabd0d0ecbcc56f4e3 # v2
+        with:
+          extra-args: --all-files
+
+  check-version:
+    name: check-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      github.event_name == 'pull_request' &&
+      contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+      contains(fromJSON('["renovate[bot]", "tqer39-apps[bot]"]'), github.event.pull_request.user.login) == false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Check version is bumped
+        run: |
+          LATEST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v '-' | head -1)
+          LATEST_TAG=${LATEST_TAG:-v0.0.0}
+          TAG_VERSION=${LATEST_TAG#v}
+
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+          echo "最新タグ: ${LATEST_TAG} (${TAG_VERSION})"
+          echo "pyproject.toml: ${CURRENT_VERSION}"
+
+          IFS='.' read -r TAG_MAJOR TAG_MINOR TAG_PATCH <<< "${TAG_VERSION}"
+          IFS='.' read -r CUR_MAJOR CUR_MINOR CUR_PATCH <<< "${CURRENT_VERSION}"
+
+          TAG_NUM=$((TAG_MAJOR * 1000000 + TAG_MINOR * 1000 + TAG_PATCH))
+          CUR_NUM=$((CUR_MAJOR * 1000000 + CUR_MINOR * 1000 + CUR_PATCH))
+
+          if [ "${CUR_NUM}" -le "${TAG_NUM}" ]; then
+            echo "::error::pyproject.toml のバージョン (${CURRENT_VERSION}) が最新タグ (${LATEST_TAG}) より新しくありません。バージョンを更新してください。"
+            exit 1
+          fi
+
+          echo "OK: バージョン ${CURRENT_VERSION} は最新タグ ${LATEST_TAG} より新しいです。"
+
+  generate-pr-description:
+    name: generate-pr-description
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'pull_request' &&
+      contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+      github.event.pull_request.base.ref == 'main' &&
+      contains(fromJSON('["renovate[bot]", "tqer39-apps[bot]"]'), github.event.pull_request.user.login) == false
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          model: 'openai/gpt-4o'
+          locale: 'ja'
+
+  workflow-result:
+    name: workflow-result
+    needs: [prek, check-version, generate-pr-description]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check workflow result
+        run: |
+          if [ "${{ needs.prek.result }}" == "failure" ]; then
+            echo "prek failed"
+            exit 1
+          fi
+          if [ "${{ needs.check-version.result }}" == "failure" ]; then
+            echo "check-version failed"
+            exit 1
+          fi
+          if [ "${{ needs.generate-pr-description.result }}" == "failure" ]; then
+            echo "::warning::generate-pr-description failed (non-blocking)"
+          fi
+          echo "All required jobs completed successfully"
