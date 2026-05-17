@@ -39,7 +39,7 @@
 
 ### `ci.yml` のジョブ構成
 
-```
+```text
 on:
   pull_request:
   push:
