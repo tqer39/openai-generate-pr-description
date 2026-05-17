@@ -89,7 +89,7 @@ jobs:
       - uses: ./
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          api-key: 'dummy-invalid-key-for-issue-349-test'
           model: 'openai/gpt-4o'
           locale: 'ja'
 
