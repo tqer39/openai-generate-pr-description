@@ -158,4 +158,13 @@ permissions:
 | --- | --- |
 | ブランチ保護更新を忘れて PR 2 を出すと merge 不可 | 移行手順に明記、PR 2 の説明に手順チェックリストを含める |
 | 旧 3 ファイルを残したまま放置すると重複実行で API クォータ消費 | PR 2 を必ずセットで実施。PR 1 マージ後 24h 以内を目安 |
-| `auto-merge.yml` の `check_suite: completed` が `workflow-result` 完了を検知しない | check_suite はワークフロー単位で発火するため、`ci.yml` 完了で必ず発火する。動作確認は移行後に claude-auto ラベルで実施 |
+| `auto-merge.yml` の `check_suite: completed` が `workflow-result` 完了を検知しない | **当初想定が誤りだった**。GitHub の仕様により、GitHub Actions が作成した check_suite では `check_suite` イベントは発火しない（再帰防止）。実機でも発火実績ゼロ（Issue #348 で確認）。トリガから削除済み。`pull_request: labeled` のみで運用する |
+
+### 追記: `check_suite: completed` トリガの実機検証結果（Issue #348）
+
+- `gh run list --workflow=auto-merge.yml --event=check_suite` の結果は常に空
+- GitHub Actions 公式ドキュメントに以下の記述あり:
+  > To prevent recursive workflows, this event does not trigger workflows if the check suite was created by GitHub Actions or if the check suite's head SHA is associated with GitHub Actions.
+- すなわち `workflow-result` ジョブ完了に伴う check_suite は GitHub Actions 由来のため、`check_suite: completed` トリガは構造上発火し得ない
+- 「claude-auto ラベルを CI 完了後に後付け」シナリオも、`pull_request: labeled` で発火するため `check_suite` 経路は不要
+- 結論: `auto-merge.yml` から `check_suite` トリガを削除し、`pull_request: labeled` 単独運用に整理
