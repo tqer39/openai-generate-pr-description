@@ -53,7 +53,7 @@ wheels = [
 
 [[package]]
 name = "generate-pr-description-action"
-version = "2.0.3"
+version = "2.0.5"
 source = { editable = "." }
 dependencies = [
     { name = "openai" },
