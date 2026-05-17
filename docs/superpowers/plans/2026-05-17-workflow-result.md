@@ -389,7 +389,7 @@ gh pr merge --squash --delete-branch
 
 **Files:** 変更なし（観察のみ）
 
-- [ ] **Step 1: 次の Renovate PR で挙動を観察**
+- [x] **Step 1: 次の Renovate PR で挙動を観察**
 
 Renovate PR が来たら以下を確認:
 
@@ -404,6 +404,8 @@ Renovate PR が来たら以下を確認:
 gh pr list --author "app/renovate" --limit 5
 gh pr checks <PR_NUMBER>
 ```
+
+確認済み: PR #337（`astral-sh/setup-uv v8`）の最終ラン [25981379274](https://github.com/tqer39/generate-pr-description/actions/runs/25981379274) で `prek=success / check-version=skipped / generate-pr-description=skipped / workflow-result=success` を確認（Issue #345）。
 
 - [ ] **Step 2: claude-auto ラベル付き PR で auto-merge 動作を確認**
 
